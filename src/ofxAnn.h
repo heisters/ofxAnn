@@ -6,8 +6,8 @@
 template < typename container_t, typename size_t = int, typename coord_t = float >
 class ofxAnn {
 public:
-    struct result {
-        result(int count) :
+    struct result_knn {
+        result_knn(int count) :
         indices(vector< size_t >(count)),
         distances(vector< coord_t >(count))
         { }
@@ -16,21 +16,36 @@ public:
         vector< size_t > indices;
         typename vector< coord_t>::iterator distances_it;
         vector< coord_t > distances;
+        
+        size_t size() const { return indices.size(); }
+    };
+    
+    struct result_radius {
+        result_radius() {};
+        
+        typedef std::vector< std::pair< size_t, coord_t > > container;
+        container data;
+        typename container::iterator it;
+        
+        size_t size() const { return data.size(); }
+        typename container::iterator begin() { return data.begin(); }
+        typename container::iterator end() { return data.end(); }
     };
     
     ofxAnn(container_t & _container) :
+    container(_container),
     adapter(Adapter(_container)),
     index(Index(3 /* dims */,
                 adapter,
                 nanoflann::KDTreeSingleIndexAdaptorParams(10 /* max leaf */)))
     { }
     
-    void buildIndex() { index.buildIndex(); }
-    result findNearest(ofPoint & pt) { return findNeighbors(pt, 1); }
+    void buildIndex() { if ( container.size() > 0 ) index.buildIndex(); }
+    result_knn findNearest(ofPoint & pt) { return findNeighbors(pt, 1); }
     
-    result findNeighbors(ofPoint & pt, const size_t numResults = 1)
+    result_knn findNeighbors(ofPoint & pt, const size_t numResults = 1)
     {
-        result r(numResults);
+        result_knn r(numResults);
         
         float query[3] = { pt.x, pt.y, pt.z };
         
@@ -38,7 +53,19 @@ public:
                 
         return r;        
     }
+    
+    result_radius findWithin(ofPoint & pt, const coord_t radius)
+    {
+        result_radius r;
+        nanoflann::SearchParams params;
+        float query[3] = { pt.x, pt.y, pt.z };
+        
+        index.radiusSearch(&query[0], radius, r.data, params);
+        
+        return r;
+    }
 private:
+    container_t & container;
     
     struct Adapter {
         const container_t &container;
@@ -49,7 +76,7 @@ private:
         
         inline const container_t & getContainer() const { return container; }
         inline const ofPoint getPoint(size_t idx) const {
-            return getContainer()[idx].getPoint();
+            return getContainer().at(idx).getPoint();
         }
         
         // KD callbacks
