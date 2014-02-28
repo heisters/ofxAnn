@@ -107,9 +107,12 @@ private:
         
         inline const container_t & getContainer() const { return container; }
 
-        inline const vector<float> getValues(size_t idx) const {
-            return getContainer().at(idx).getValues();
+        inline const ofPoint getPoint(size_t idx) const {
+            return getContainer().at(idx).getPoint();
         }
+//        inline const vector<float> getValues(size_t idx) const {
+//            return getContainer().at(idx).getValues();
+//        }
         
         // KD callbacks
         
@@ -120,7 +123,7 @@ private:
         inline coord_t kdtree_distance
         (const coord_t * p1, const size_t idx_p2, size_t size) const
         {
-            vector<float> pt = getValues(idx_p2);
+            ofPoint pt = getPoint(idx_p2);
             const coord_t d0 = p1[0] - pt[0];
             const coord_t d1 = p1[1] - pt[1];
             const coord_t d2 = p1[2] - pt[2];
@@ -148,7 +151,7 @@ private:
         inline float kdtree_get_pt
         (const size_t idx, int dim) const
         {
-            vector<float> pt = getValues(idx);
+            ofPoint pt = getPoint(idx);
             if (dim == 0) return pt[0];
             else if (dim == 1) return pt[1];
             else if (dim == 2) return pt[2];
