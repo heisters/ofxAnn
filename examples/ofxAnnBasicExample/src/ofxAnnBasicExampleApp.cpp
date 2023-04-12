@@ -37,26 +37,52 @@ void ofxAnnBasicExampleApp::draw(){
     for ( pit = allPoints.begin(); pit != allPoints.end(); pit++ ) {
         ofPoint center = pit->getPoint();
         
+        // nearest neighbors in a threshold
+        ofPoint m = { ofGetMouseX(), ofGetMouseY() };
+        float threshold = 10000.f;
+        bool isNeighbor = false;
+        ann_points::result_radius neighborsRadius = ann_allPoints.findWithin(m, threshold);
+        for ( auto &n : neighborsRadius.data ) {
+            if ( center == allPoints[n.first].getPoint() ) {
+                isNeighbor = true;
+                break;
+            }
+        }
+
         // draw the point itself
         ofPushStyle();
         ofNoFill();
         ofSetLineWidth(4);
-        ofSetColor(ofColor::cyan, 100);
+        if ( !isNeighbor ) {
+            ofSetColor(ofColor::cyan, 100);
+        } else {
+            ofSetColor(ofColor::red, 100);
+        }
+        
         ofCircle(center, 10);
         ofPopStyle();
+
+        //draw threshold
+        ofPushStyle();
+        ofNoFill();
+        ofSetLineWidth(1);
+        ofSetColor(ofColor::red, 100);
+        ofCircle( m, sqrt(threshold));
+        ofPopStyle();
+
         
         // draw lines to its nearest neighbors
         ofPushStyle();
         ofSetLineWidth(2);
         ofSetColor(ofColor::magenta, 75);
         
-        ann_points::result neighbors = ann_allPoints.findNeighbors(center, 5);
+        ann_points::result_knn neighbors = ann_allPoints.findNeighbors(m, 5);
         for (neighbors.indices_it = neighbors.indices.begin();
              neighbors.indices_it != neighbors.indices.end();
              neighbors.indices_it++)
         {
             ofPoint neighborCenter = allPoints[*neighbors.indices_it].getPoint();
-            ofLine(center, neighborCenter);
+            ofLine(m, neighborCenter);
         }
         
         ofPopStyle();
@@ -78,7 +104,9 @@ void ofxAnnBasicExampleApp::keyPressed(int key){
     if ( key == OF_KEY_UP ) {
         numPoints += 5;
     } else if ( key == OF_KEY_DOWN ) {
-        numPoints -= 5;
+        if ( numPoints > 5 ) {
+            numPoints -= 5;
+        }
     }
 }
 
